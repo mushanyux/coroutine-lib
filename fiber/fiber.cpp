@@ -73,6 +73,69 @@ namespace mushanyu {
 
         id_ = s_fiber_id ++;
         s_fiber_count ++;
-        if (debug) std::cout << "Fiber(): main id = " << id_ << std::endl;
+        if (debug) std::cout << "Fiber(): child id = " << id_ << std::endl;
+    }
+
+    Fiber::~Fiber() {
+        s_fiber_count --;
+        if (stack_) {
+            free(stack_);
+        }
+        if (debug) std::cout << "~!Fiber(): main id = " << id_ << std::endl;
+    }
+
+    void Fiber::reset(std::function<void()> cb) {
+        assert(stack_ != nullptr && state_ == TERM);
+        state_ = READY;
+        cb_ = cb;
+
+        if (getcontext(&ctx_)) {
+            std::cerr << "reset() failed" << std::endl;
+            pthread_exit(NULL);
+        }
+
+        ctx_.uc_link = nullptr;
+        ctx_.uc_stack.ss_sp = stack_;
+        ctx_.uc_stack.ss_size = stacksize_;
+        makecontext(&ctx_, &Fiber::MainFunc, 0);
+    }
+
+    void Fiber::resume() {
+        assert(state_ == READY);
+        state_ = RUNNING;
+        if (runInScheduler_) {
+            SetThis(this);
+            if (swapcontext(&(t_scheduler_fiber->ctx_), &ctx_)) {
+                std::cerr << "resume() to t_scheduler_fiber failed" << std::endl;
+                pthread_exit(NULL);
+            }
+        }
+    }
+
+    void Fiber::yield() {
+        assert(state_ == RUNNING || state_ == TERM);
+        if (state_ != TERM) {
+            state_ = READY;
+        } 
+        if (runInScheduler_) {
+            SetThis(t_scheduler_fiber);
+            if (swapcontext(&ctx_, &(t_thread_fiber->ctx_))) {
+                std::cerr << "yield() to t_thread_fiber failed" << std::endl;
+                pthread_exit(NULL);
+            }
+        }
+    }
+
+    void Fiber::MainFunc() {
+        std::shared_ptr<Fiber> curr = GetThis();
+        assert(curr != nullptr);
+
+        curr->cb_();
+        curr->cb_ = nullptr;
+        curr->state_ = TERM;
+    
+        auto raw_ptr = curr.get();
+        curr.reset();
+        raw_ptr->yield();
     }
 }
