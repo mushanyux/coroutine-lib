@@ -23,14 +23,18 @@ public:
     Fiber(std::function<void()> cb, size_t stacksize = 0, bool run_in_schedule = true);
     ~Fiber();
     
-    // 重用
     void reset(std::function<void()> cb);
-
     void resume();
     void yield();
 
     uint64_t getId() const {return id_;}
     State getState() const {return state_;};
+
+    static void SetThis(Fiber* f);
+    static std::shared_ptr<Fiber> GetThis();
+    static void SetSchedulerFiber(Fiber *f);
+    static uint64_t GetFiberId();
+    static void MainFunc();
 
     std::mutex mtx_;
 private:
