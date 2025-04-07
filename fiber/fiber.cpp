@@ -54,8 +54,8 @@ namespace mushanyu {
         if (debug) std::cout << "Fiber(): main id = " << id_ << std::endl;
     }
 
-    Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool run_in_schedule) 
-    : cb_(cb), runInScheduler_(run_in_schedule) {
+    Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool run_in_schedule) :
+    cb_(cb), runInScheduler_(run_in_schedule) {
         state_ = READY;
         
         stacksize_ = stacksize ? stacksize : 128000;
@@ -109,6 +109,12 @@ namespace mushanyu {
                 std::cerr << "resume() to t_scheduler_fiber failed" << std::endl;
                 pthread_exit(NULL);
             }
+        } else {
+            SetThis(this);
+            if (swapcontext(&(t_thread_fiber->ctx_), &ctx_)) {
+                std::cerr << "resume() to t_thread_fiber failed" << std::endl;
+                pthread_exit(NULL);
+            }
         }
     }
 
@@ -121,6 +127,12 @@ namespace mushanyu {
             SetThis(t_scheduler_fiber);
             if (swapcontext(&ctx_, &(t_thread_fiber->ctx_))) {
                 std::cerr << "yield() to t_thread_fiber failed" << std::endl;
+                pthread_exit(NULL);
+            }
+        } else {
+            SetThis(t_thread_fiber.get());
+            if (swapcontext(&ctx_, &(t_thread_fiber->ctx_))) {
+                std::cerr << "resume() to t_thread_fiber failed" << std::endl;
                 pthread_exit(NULL);
             }
         }
