@@ -1,10 +1,9 @@
 #include "timer.h"
 #include <assert.h>
-#include <shared_mutex>
 
 namespace mushanyu {
     bool Timer::cancel() {
-        std::unique_lock<std::mutex> lock(manager_->mutex_);
+        std::unique_lock<std::shared_mutex> lock(manager_->mutex_);
         if (cb_ == nullptr) {
             return false;
         }
@@ -36,7 +35,7 @@ namespace mushanyu {
             return true;
         }
         {
-            std::unique_lock<std::mutex> write_lock(manager_->mutex_);
+            std::unique_lock<std::shared_mutex> write_lock(manager_->mutex_);
             if (cb_ == nullptr) {
                 return false;
             }

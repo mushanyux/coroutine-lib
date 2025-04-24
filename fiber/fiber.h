@@ -9,8 +9,9 @@
 #include <unistd.h>
 #include <mutex>
 
+static bool debug = false;
+
 namespace mushanyu {
- 
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     // 协程状态

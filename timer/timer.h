@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include <shared_mutex>
 
 namespace mushanyu {
 
@@ -54,7 +55,7 @@ namespace mushanyu {
     private:
         bool detectClockRollover();
 
-        std::mutex mutex_;
+        std::shared_mutex mutex_;
 
         std::set<std::shared_ptr<Timer>, Timer::Comparator> timers_;
 
