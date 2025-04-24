@@ -48,7 +48,7 @@ namespace mushanyu {
         bool hasTimer();
 
     protected:
-        virtual void onTimerInsertedAtFront() = 0;
+        void onTimerInsertedAtFront();
 
         void addTimer(std::shared_ptr<Timer> timer);
 
